@@ -3,291 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Tweaks | Login to Continue</title>
+    <title>Tweaks | Login</title>
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#0a0a0f">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="stylesheet" href="css/auth.css">
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; overflow: hidden; }
+        body { background: #0a0a0f; font-family: 'Inter', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
         
-        /* Video Background */
-        .video-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
+        .auth-card {
+            background: rgba(20,20,30,0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 48px;
+            padding: 40px 32px;
             width: 100%;
-            height: 100%;
-            object-fit: cover;
-            z-index: -1;
-            filter: brightness(0.4);
+            max-width: 420px;
+            border: 1px solid rgba(255,255,255,0.1);
+            animation: slideUp 0.5s ease;
         }
         
-        .overlay-text {
-            position: fixed;
-            bottom: 40px;
-            left: 0;
-            right: 0;
-            text-align: center;
-            color: rgba(255,255,255,0.5);
-            font-size: 12px;
-            z-index: 10;
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
+        
+        .logo { text-align: center; margin-bottom: 32px; }
+        .logo h1 { font-size: 48px; font-weight: 900; font-style: italic; background: linear-gradient(135deg, #f0abfc, #d946ef); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .logo p { color: rgba(255,255,255,0.5); font-size: 14px; margin-top: 8px; }
+        
+        .input-group { margin-bottom: 20px; }
+        .input-group input { width: 100%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 16px; padding: 14px 16px; color: white; font-size: 15px; outline: none; transition: all 0.2s; }
+        .input-group input:focus { border-color: #d946ef; background: rgba(255,255,255,0.15); }
+        
+        .btn { width: 100%; background: linear-gradient(135deg, #d946ef, #a855f7); border: none; border-radius: 32px; padding: 14px; color: white; font-weight: 700; font-size: 16px; cursor: pointer; transition: transform 0.1s; }
+        .btn:active { transform: scale(0.98); }
+        
+        .btn-google { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 16px; }
+        
+        .divider { text-align: center; color: rgba(255,255,255,0.4); font-size: 12px; margin: 24px 0; position: relative; }
+        .divider::before, .divider::after { content: ''; position: absolute; top: 50%; width: 40%; height: 1px; background: rgba(255,255,255,0.2); }
+        .divider::before { left: 0; }
+        .divider::after { right: 0; }
+        
+        .footer { text-align: center; margin-top: 24px; color: rgba(255,255,255,0.5); font-size: 13px; }
+        .footer a { color: #d946ef; text-decoration: none; font-weight: 600; }
+        
+        .error-message { background: rgba(255,69,58,0.2); border: 1px solid #ff453a; border-radius: 12px; padding: 10px; color: #ff6b6b; font-size: 12px; margin-bottom: 16px; display: none; }
     </style>
 </head>
 <body>
-    <video class="video-bg" autoplay loop muted playsinline>
-        <source src="https://assets.mixkit.co/videos/preview/mixkit-abstract-animation-of-colored-neon-lights-4148-large.mp4" type="video/mp4">
-    </video>
-    
-    <div class="auth-container">
-        <div class="auth-card" id="authCard">
-            <div class="auth-logo">
-                <h1>TWEAKS</h1>
-                <p>Where moments go viral ✨</p>
-            </div>
-            
-            <div id="errorMessage" class="error-message"></div>
-            <div id="successMessage" class="success-message"></div>
-            
-            <!-- Login Form -->
-            <div id="loginForm">
-                <div class="auth-input-group">
-                    <label>Email</label>
-                    <input type="email" id="loginEmail" placeholder="Enter your email">
-                </div>
-                <div class="auth-input-group">
-                    <label>Password</label>
-                    <input type="password" id="loginPassword" placeholder="Enter your password">
-                </div>
-                <button class="auth-btn" id="loginBtn">Log In</button>
-                
-                <div class="auth-divider">or</div>
-                
-                <button class="auth-btn auth-btn-google" id="googleLoginBtn">
-                    <i class="fab fa-google"></i>
-                    Continue with Google
-                </button>
-                
-                <div class="auth-footer">
-                    Don't have an account? <a href="#" id="showSignup">Sign up</a>
-                </div>
-            </div>
-            
-            <!-- Signup Form (hidden initially) -->
-            <div id="signupForm" style="display: none;">
-                <div class="auth-input-group">
-                    <label>Username</label>
-                    <input type="text" id="signupUsername" placeholder="Choose a username">
-                </div>
-                <div class="auth-input-group">
-                    <label>Email</label>
-                    <input type="email" id="signupEmail" placeholder="Enter your email">
-                </div>
-                <div class="auth-input-group">
-                    <label>Password</label>
-                    <input type="password" id="signupPassword" placeholder="Create a password">
-                </div>
-                <div class="auth-input-group">
-                    <label>Confirm Password</label>
-                    <input type="password" id="signupConfirmPassword" placeholder="Confirm your password">
-                </div>
-                <button class="auth-btn" id="signupBtn">Sign Up</button>
-                
-                <div class="auth-divider">or</div>
-                
-                <button class="auth-btn auth-btn-google" id="googleSignupBtn">
-                    <i class="fab fa-google"></i>
-                    Sign up with Google
-                </button>
-                
-                <div class="auth-footer">
-                    Already have an account? <a href="#" id="showLogin">Log in</a>
-                </div>
-            </div>
+    <div class="auth-card">
+        <div class="logo">
+            <h1>TWEAKS</h1>
+            <p>Where moments go viral ✨</p>
         </div>
-    </div>
-    
-    <div class="overlay-text">
-        <i class="fas fa-music"></i> 50M+ videos | Trending daily
+        
+        <div id="errorMessage" class="error-message"></div>
+        
+        <div id="loginForm">
+            <div class="input-group"><input type="email" id="loginEmail" placeholder="Email"></div>
+            <div class="input-group"><input type="password" id="loginPassword" placeholder="Password"></div>
+            <button class="btn" id="loginBtn">Log In</button>
+            <button class="btn btn-google" id="googleLoginBtn"><i class="fab fa-google"></i> Continue with Google</button>
+            <div class="divider">or</div>
+            <div class="footer">Don't have an account? <a href="#" id="showSignup">Sign up</a></div>
+        </div>
+        
+        <div id="signupForm" style="display: none;">
+            <div class="input-group"><input type="text" id="signupUsername" placeholder="Username"></div>
+            <div class="input-group"><input type="email" id="signupEmail" placeholder="Email"></div>
+            <div class="input-group"><input type="password" id="signupPassword" placeholder="Password"></div>
+            <div class="input-group"><input type="password" id="signupConfirmPassword" placeholder="Confirm Password"></div>
+            <button class="btn" id="signupBtn">Sign Up</button>
+            <button class="btn btn-google" id="googleSignupBtn"><i class="fab fa-google"></i> Sign up with Google</button>
+            <div class="divider">or</div>
+            <div class="footer">Already have an account? <a href="#" id="showLogin">Log in</a></div>
+        </div>
     </div>
 
     <script type="module">
-        import { 
-            auth, 
-            signInWithPopup, 
-            googleProvider, 
-            createUserWithEmailAndPassword,
-            signInWithEmailAndPassword,
-            db,
-            doc,
-            setDoc,
-            serverTimestamp
-        } from './js/firebase-config.js';
+        import { auth, signInWithPopup, googleProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword, db, doc, setDoc, serverTimestamp, onAuthStateChanged } from './js/firebase-config.js';
         
-        // DOM Elements
         const loginForm = document.getElementById('loginForm');
         const signupForm = document.getElementById('signupForm');
-        const showSignup = document.getElementById('showSignup');
-        const showLogin = document.getElementById('showLogin');
-        const loginBtn = document.getElementById('loginBtn');
-        const signupBtn = document.getElementById('signupBtn');
-        const googleLoginBtn = document.getElementById('googleLoginBtn');
-        const googleSignupBtn = document.getElementById('googleSignupBtn');
         const errorDiv = document.getElementById('errorMessage');
-        const successDiv = document.getElementById('successMessage');
         
-        function showError(message) {
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-            setTimeout(() => { errorDiv.style.display = 'none'; }, 3000);
-        }
+        function showError(message) { errorDiv.textContent = message; errorDiv.style.display = 'block'; setTimeout(() => { errorDiv.style.display = 'none'; }, 3000); }
         
-        function showSuccess(message) {
-            successDiv.textContent = message;
-            successDiv.style.display = 'block';
-            setTimeout(() => { successDiv.style.display = 'none'; }, 2000);
-        }
+        document.getElementById('showSignup').addEventListener('click', (e) => { e.preventDefault(); loginForm.style.display = 'none'; signupForm.style.display = 'block'; });
+        document.getElementById('showLogin').addEventListener('click', (e) => { e.preventDefault(); signupForm.style.display = 'none'; loginForm.style.display = 'block'; });
         
-        // Toggle between login and signup
-        showSignup.addEventListener('click', (e) => {
-            e.preventDefault();
-            loginForm.style.display = 'none';
-            signupForm.style.display = 'block';
-        });
-        
-        showLogin.addEventListener('click', (e) => {
-            e.preventDefault();
-            signupForm.style.display = 'none';
-            loginForm.style.display = 'block';
-        });
-        
-        // Email/Password Login
-        loginBtn.addEventListener('click', async () => {
+        document.getElementById('loginBtn').addEventListener('click', async () => {
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
-            
-            if (!email || !password) {
-                showError('Please fill in all fields');
-                return;
-            }
-            
+            if (!email || !password) { showError('Please fill in all fields'); return; }
             try {
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                showSuccess('Login successful! Redirecting...');
-                setTimeout(() => {
-                    window.location.href = '/index.html';
-                }, 1000);
-            } catch (error) {
-                if (error.code === 'auth/user-not-found') {
-                    showError('No account found with this email');
-                } else if (error.code === 'auth/wrong-password') {
-                    showError('Incorrect password');
-                } else {
-                    showError(error.message);
-                }
-            }
+                await signInWithEmailAndPassword(auth, email, password);
+                window.location.href = '/index.html';
+            } catch (error) { showError(error.message); }
         });
         
-        // Email/Password Signup
-        signupBtn.addEventListener('click', async () => {
+        document.getElementById('signupBtn').addEventListener('click', async () => {
             const username = document.getElementById('signupUsername').value;
             const email = document.getElementById('signupEmail').value;
             const password = document.getElementById('signupPassword').value;
-            const confirmPassword = document.getElementById('signupConfirmPassword').value;
-            
-            if (!username || !email || !password) {
-                showError('Please fill in all fields');
-                return;
-            }
-            
-            if (password !== confirmPassword) {
-                showError('Passwords do not match');
-                return;
-            }
-            
-            if (password.length < 6) {
-                showError('Password must be at least 6 characters');
-                return;
-            }
-            
+            const confirm = document.getElementById('signupConfirmPassword').value;
+            if (!username || !email || !password) { showError('Please fill in all fields'); return; }
+            if (password !== confirm) { showError('Passwords do not match'); return; }
+            if (password.length < 6) { showError('Password must be at least 6 characters'); return; }
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                
-                // Create user profile in Firestore
                 await setDoc(doc(db, 'users', userCredential.user.uid), {
-                    username: username,
-                    email: email,
-                    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
-                    bio: 'New to Tweaks! 🚀',
-                    followers: [],
-                    following: [],
-                    likes: 0,
-                    videos: 0,
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp()
+                    username: username, email: email, avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
+                    bio: 'New to Tweaks! 🚀', followers: [], following: [], likes: 0, videos: 0,
+                    createdAt: serverTimestamp(), updatedAt: serverTimestamp()
                 });
-                
-                showSuccess('Account created! Redirecting...');
-                setTimeout(() => {
-                    window.location.href = '/index.html';
-                }, 1000);
-            } catch (error) {
-                if (error.code === 'auth/email-already-in-use') {
-                    showError('Email already registered');
-                } else {
-                    showError(error.message);
-                }
-            }
+                window.location.href = '/index.html';
+            } catch (error) { showError(error.message); }
         });
         
-        // Google Login/Signup
-        async function handleGoogleAuth() {
+        const handleGoogle = async () => {
             try {
                 const result = await signInWithPopup(auth, googleProvider);
                 const user = result.user;
-                
-                // Check if user exists in Firestore
-                const userDoc = await import('./js/firebase-config.js').then(module => 
-                    module.getDoc(module.doc(module.db, 'users', user.uid))
-                );
-                
+                const userDoc = await import('./js/firebase-config.js').then(m => m.getDoc(m.doc(m.db, 'users', user.uid)));
                 if (!userDoc.exists()) {
-                    // Create new user profile
                     await setDoc(doc(db, 'users', user.uid), {
                         username: user.displayName?.replace(/\s/g, '_').toLowerCase() || 'user_' + user.uid.slice(0, 8),
-                        email: user.email,
-                        avatar: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`,
-                        bio: 'Joined via Google! ✨',
-                        followers: [],
-                        following: [],
-                        likes: 0,
-                        videos: 0,
-                        createdAt: serverTimestamp(),
-                        updatedAt: serverTimestamp()
+                        email: user.email, avatar: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`,
+                        bio: 'Joined via Google! ✨', followers: [], following: [], likes: 0, videos: 0,
+                        createdAt: serverTimestamp(), updatedAt: serverTimestamp()
                     });
                 }
-                
-                showSuccess('Google login successful!');
-                setTimeout(() => {
-                    window.location.href = '/index.html';
-                }, 1000);
-            } catch (error) {
-                showError(error.message);
-            }
-        }
-        
-        googleLoginBtn.addEventListener('click', handleGoogleAuth);
-        googleSignupBtn.addEventListener('click', handleGoogleAuth);
-        
-        // Check if already logged in
-        import { onAuthStateChanged } from './js/firebase-config.js';
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
                 window.location.href = '/index.html';
-            }
-        });
+            } catch (error) { showError(error.message); }
+        };
+        
+        document.getElementById('googleLoginBtn').addEventListener('click', handleGoogle);
+        document.getElementById('googleSignupBtn').addEventListener('click', handleGoogle);
+        
+        onAuthStateChanged(auth, (user) => { if (user) window.location.href = '/index.html'; });
     </script>
 </body>
 </html>
