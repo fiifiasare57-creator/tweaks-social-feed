@@ -9,349 +9,114 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            background: #0a0a0f; 
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            color: white;
-        }
+        body { background: #0a0a0f; font-family: 'Inter', sans-serif; color: white; }
         
-        .profile-header {
-            background: linear-gradient(135deg, #1a1a2e, #0a0a0f);
-            padding: 60px 20px 30px;
-            position: relative;
-        }
+        .profile-header { background: linear-gradient(135deg, #1a1a2e, #0a0a0f); padding: 60px 20px 30px; }
+        .profile-avatar { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #d946ef; object-fit: cover; margin-bottom: 16px; }
+        .stats-grid { display: flex; justify-content: space-around; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 24px; margin: 20px; }
+        .stat-item { text-align: center; }
+        .stat-number { font-size: 22px; font-weight: 800; }
+        .stat-label { font-size: 11px; opacity: 0.6; margin-top: 4px; }
         
-        .profile-avatar {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            border: 3px solid #d946ef;
-            object-fit: cover;
-            margin-bottom: 16px;
-        }
+        .tabs { display: flex; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 0 20px; }
+        .tab { flex: 1; text-align: center; padding: 12px; font-size: 14px; font-weight: 600; cursor: pointer; color: rgba(255,255,255,0.5); position: relative; }
+        .tab.active { color: #d946ef; }
+        .tab.active::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: #d946ef; }
         
-        .stats-grid {
-            display: flex;
-            justify-content: space-around;
-            padding: 20px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 24px;
-            margin: 20px;
-        }
+        .video-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 2px; }
+        .video-thumb { aspect-ratio: 9/16; background: #1a1a2e; object-fit: cover; width: 100%; cursor: pointer; }
         
-        .stat-item {
-            text-align: center;
-        }
-        
-        .stat-number {
-            font-size: 22px;
-            font-weight: 800;
-        }
-        
-        .stat-label {
-            font-size: 11px;
-            opacity: 0.6;
-            margin-top: 4px;
-        }
-        
-        .tabs {
-            display: flex;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding: 0 20px;
-        }
-        
-        .tab {
-            flex: 1;
-            text-align: center;
-            padding: 12px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            color: rgba(255,255,255,0.5);
-            transition: all 0.2s;
-            position: relative;
-        }
-        
-        .tab.active {
-            color: #d946ef;
-        }
-        
-        .tab.active::after {
-            content: '';
-            position: absolute;
-            bottom: -1px;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: #d946ef;
-        }
-        
-        .video-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 2px;
-            padding: 2px;
-        }
-        
-        .video-thumb {
-            aspect-ratio: 9/16;
-            background: #1a1a2e;
-            object-fit: cover;
-            width: 100%;
-            cursor: pointer;
-        }
-        
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(10,10,15,0.95);
-            backdrop-filter: blur(20px);
-            display: flex;
-            justify-content: space-around;
-            padding: 10px 20px 20px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            z-index: 50;
-        }
-        
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            color: rgba(255,255,255,0.5);
-            transition: color 0.2s;
-            cursor: pointer;
-        }
-        
-        .nav-item.active {
-            color: #d946ef;
-        }
-        
-        .nav-item i { font-size: 22px; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(10,10,15,0.95); backdrop-filter: blur(20px); display: flex; justify-content: space-around; padding: 8px 20px 18px; border-top: 1px solid rgba(255,255,255,0.1); z-index: 50; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: rgba(255,255,255,0.5); cursor: pointer; }
+        .nav-item.active { color: #d946ef; }
+        .nav-item i { font-size: 24px; }
         .nav-item span { font-size: 10px; font-weight: 500; }
         
-        .follow-btn {
-            background: linear-gradient(135deg, #d946ef, #a855f7);
-            border: none;
-            padding: 8px 24px;
-            border-radius: 30px;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
-        
-        .follow-btn:active { transform: scale(0.96); }
-        
-        .edit-profile-btn {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            padding: 8px 24px;
-            border-radius: 30px;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-        }
+        .follow-btn { background: linear-gradient(135deg, #d946ef, #a855f7); border: none; padding: 8px 24px; border-radius: 30px; color: white; font-weight: 600; cursor: pointer; }
+        .edit-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 8px 24px; border-radius: 30px; color: white; font-weight: 600; cursor: pointer; }
     </style>
 </head>
 <body>
     <div id="profileContainer"></div>
-    
     <div class="bottom-nav">
-        <div class="nav-item" data-page="feed">
-            <i class="fas fa-home"></i>
-            <span>Feed</span>
-        </div>
-        <div class="nav-item" data-page="search">
-            <i class="fas fa-search"></i>
-            <span>Discover</span>
-        </div>
-        <div class="nav-item active" data-page="profile">
-            <i class="fas fa-user"></i>
-            <span>Profile</span>
-        </div>
+        <div class="nav-item" data-page="feed"><i class="fas fa-home"></i><span>Home</span></div>
+        <div class="nav-item" data-page="discover"><i class="fas fa-compass"></i><span>Discover</span></div>
+        <div class="nav-item active" data-page="profile"><i class="fas fa-user"></i><span>Profile</span></div>
     </div>
 
     <script type="module">
-        import { 
-            auth, 
-            db, 
-            doc, 
-            getDoc, 
-            updateDoc,
-            collection,
-            query,
-            where,
-            getDocs,
-            arrayUnion,
-            arrayRemove,
-            onAuthStateChanged,
-            signOut
-        } from './js/firebase-config.js';
+        import { auth, db, doc, getDoc, updateDoc, collection, query, where, getDocs, arrayUnion, arrayRemove, onAuthStateChanged, signOut } from './js/firebase-config.js';
         
-        let currentUser = null;
-        let profileUserId = null;
-        let userData = null;
-        let isFollowing = false;
+        let currentUser = null, profileUserId = null, userData = null, isFollowing = false;
         
         async function loadProfile(userId) {
             const userDoc = await getDoc(doc(db, 'users', userId));
-            if (!userDoc.exists()) return null;
-            return { id: userDoc.id, ...userDoc.data() };
-        }
-        
-        async function loadUserVideos(userId) {
-            const videosQuery = query(
-                collection(db, 'videos'),
-                where('userId', '==', userId),
-                where('isPublic', '==', true)
-            );
-            const snapshot = await getDocs(videosQuery);
-            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        }
-        
-        async function toggleFollow(targetUserId) {
-            if (!currentUser) return;
-            
-            const currentUserRef = doc(db, 'users', currentUser.uid);
-            const targetUserRef = doc(db, 'users', targetUserId);
-            
-            if (isFollowing) {
-                await updateDoc(currentUserRef, {
-                    following: arrayRemove(targetUserId)
-                });
-                await updateDoc(targetUserRef, {
-                    followers: arrayRemove(currentUser.uid)
-                });
-                isFollowing = false;
-            } else {
-                await updateDoc(currentUserRef, {
-                    following: arrayUnion(targetUserId)
-                });
-                await updateDoc(targetUserRef, {
-                    followers: arrayUnion(currentUser.uid)
-                });
-                isFollowing = true;
-            }
-            
-            renderProfile();
+            return userDoc.exists() ? { id: userDoc.id, ...userDoc.data() } : null;
         }
         
         async function renderProfile() {
             const container = document.getElementById('profileContainer');
             const profileData = await loadProfile(profileUserId);
-            const videos = await loadUserVideos(profileUserId);
-            
-            if (!profileData) {
-                container.innerHTML = '<div class="text-center p-8">User not found</div>';
-                return;
-            }
+            if (!profileData) { container.innerHTML = '<div class="text-center p-8">User not found</div>'; return; }
             
             const isOwnProfile = currentUser && currentUser.uid === profileUserId;
             const followerCount = profileData.followers?.length || 0;
             const followingCount = profileData.following?.length || 0;
             
-            if (currentUser && !isOwnProfile) {
-                isFollowing = profileData.followers?.includes(currentUser.uid) || false;
-            }
+            if (currentUser && !isOwnProfile) isFollowing = profileData.followers?.includes(currentUser.uid) || false;
             
             container.innerHTML = `
-                <div class="profile-header">
-                    <div style="text-align: center;">
-                        <img src="${profileData.avatar}" class="profile-avatar" style="margin: 0 auto;">
-                        <h2 style="font-size: 22px; font-weight: 800; margin-bottom: 4px;">${profileData.username}</h2>
-                        <p style="font-size: 13px; opacity: 0.7; margin-bottom: 16px;">${profileData.bio || 'No bio yet'}</p>
-                        <div style="display: flex; gap: 12px; justify-content: center;">
-                            ${isOwnProfile ? 
-                                `<button class="edit-profile-btn" id="editProfileBtn"><i class="fas fa-pen"></i> Edit Profile</button>
-                                 <button class="edit-profile-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>` :
-                                `<button class="follow-btn" id="followBtn">${isFollowing ? 'Following ✓' : 'Follow +'}</button>`
-                            }
-                        </div>
+                <div class="profile-header text-center">
+                    <img src="${profileData.avatar}" class="profile-avatar mx-auto">
+                    <h2 class="text-2xl font-bold">${profileData.username}</h2>
+                    <p class="text-sm opacity-70 mt-1">${profileData.bio || 'No bio yet'}</p>
+                    <div class="flex gap-3 justify-center mt-4">
+                        ${isOwnProfile ? `<button class="edit-btn" id="editProfileBtn"><i class="fas fa-pen"></i> Edit Profile</button><button class="edit-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>` : `<button class="follow-btn" id="followBtn">${isFollowing ? 'Following ✓' : 'Follow +'}</button>`}
                     </div>
                 </div>
-                
                 <div class="stats-grid">
-                    <div class="stat-item">
-                        <div class="stat-number">${profileData.videos || videos.length}</div>
-                        <div class="stat-label">Videos</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number">${followerCount}</div>
-                        <div class="stat-label">Followers</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number">${followingCount}</div>
-                        <div class="stat-label">Following</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number">${profileData.likes || 0}</div>
-                        <div class="stat-label">Likes</div>
-                    </div>
+                    <div class="stat-item"><div class="stat-number">${profileData.videos || 0}</div><div class="stat-label">Videos</div></div>
+                    <div class="stat-item"><div class="stat-number">${followerCount}</div><div class="stat-label">Followers</div></div>
+                    <div class="stat-item"><div class="stat-number">${followingCount}</div><div class="stat-label">Following</div></div>
+                    <div class="stat-item"><div class="stat-number">${profileData.likes || 0}</div><div class="stat-label">Likes</div></div>
                 </div>
-                
-                <div class="tabs">
-                    <div class="tab active">Videos</div>
-                    <div class="tab">Liked</div>
-                </div>
-                
-                <div class="video-grid" id="videoGrid">
-                    ${videos.map(video => `
-                        <video src="${video.videoUrl}" class="video-thumb" muted playsinline></video>
-                    `).join('')}
-                    ${videos.length === 0 ? '<div class="col-span-3 text-center py-20 opacity-50">No videos yet</div>' : ''}
-                </div>
+                <div class="tabs"><div class="tab active">Videos</div><div class="tab">Liked</div></div>
+                <div class="video-grid" id="videoGrid"><div class="col-span-3 text-center py-20 opacity-50">No videos yet</div></div>
             `;
             
-            // Add event listeners
             if (!isOwnProfile && document.getElementById('followBtn')) {
-                document.getElementById('followBtn').addEventListener('click', () => toggleFollow(profileUserId));
+                document.getElementById('followBtn').addEventListener('click', async () => {
+                    if (isFollowing) {
+                        await updateDoc(doc(db, 'users', currentUser.uid), { following: arrayRemove(profileUserId) });
+                        await updateDoc(doc(db, 'users', profileUserId), { followers: arrayRemove(currentUser.uid) });
+                    } else {
+                        await updateDoc(doc(db, 'users', currentUser.uid), { following: arrayUnion(profileUserId) });
+                        await updateDoc(doc(db, 'users', profileUserId), { followers: arrayUnion(currentUser.uid) });
+                    }
+                    renderProfile();
+                });
             }
             
             if (document.getElementById('logoutBtn')) {
-                document.getElementById('logoutBtn').addEventListener('click', async () => {
-                    await signOut(auth);
-                    window.location.href = '/login.html';
-                });
+                document.getElementById('logoutBtn').addEventListener('click', async () => { await signOut(auth); window.location.href = '/login.html'; });
             }
-            
             if (document.getElementById('editProfileBtn')) {
                 document.getElementById('editProfileBtn').addEventListener('click', () => {
                     const newBio = prompt('Edit your bio:', profileData.bio);
-                    if (newBio !== null && currentUser) {
-                        updateDoc(doc(db, 'users', currentUser.uid), { bio: newBio });
-                        renderProfile();
-                    }
+                    if (newBio !== null && currentUser) updateDoc(doc(db, 'users', currentUser.uid), { bio: newBio }).then(() => renderProfile());
                 });
             }
-            
-            // Video hover preview
-            document.querySelectorAll('.video-thumb').forEach(video => {
-                video.addEventListener('mouseenter', () => video.play());
-                video.addEventListener('mouseleave', () => { video.pause(); video.currentTime = 0; });
-                video.addEventListener('click', () => {
-                    window.location.href = `/index.html?video=${video.src}`;
-                });
-            });
         }
         
-        // Navigation
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', () => {
                 const page = item.getAttribute('data-page');
                 if (page === 'feed') window.location.href = '/index.html';
-                else if (page === 'profile') renderProfile();
             });
         });
         
         onAuthStateChanged(auth, async (user) => {
-            if (!user) {
-                window.location.href = '/login.html';
-                return;
-            }
-            
+            if (!user) { window.location.href = '/login.html'; return; }
             currentUser = user;
             const urlParams = new URLSearchParams(window.location.search);
             profileUserId = urlParams.get('userId') || user.uid;
