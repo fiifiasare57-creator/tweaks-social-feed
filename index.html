@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Tweaks | Immersive Social Feed with Twimojis</title>
+    <meta name="description" content="Tweaks - Vertical swipeable social feed with Twimojis (floating emoji reactions), 24h stories, live chat, and haptic feedback.">
+    <meta name="theme-color" content="#0a0a0f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <!-- Tailwind + Google Fonts + Font Awesome -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,900&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #0a0a0f;
+            --text: #ffffff;
+            --glass: rgba(0, 0, 0, 0.5);
+        }
+
+        .light-mode {
+            --bg: #f5f5f7;
+            --text: #111111;
+            --glass: rgba(255, 255, 255, 0.7);
+        }
+
+        body {
+            background: var(--bg);
+            font-family: 'Inter', sans-serif;
+            transition: background 0.3s ease;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            position: fixed;
+        }
+
+        /* Feed Container */
+        .feed-container {
+            height: 100vh;
+            width: 100%;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+        }
+        .feed-container::-webkit-scrollbar { display: none; }
+        
+        .feed-item {
+            scroll-snap-align: start;
+            height: 100vh;
+            width: 100%;
+            position: relative;
+            background: #000;
+            overflow: hidden;
+        }
+
+        .media-element {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .gradient-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 60%, transparent 100%);
+            height: 55%;
+            pointer-events: none;
+        }
+
+        /* Action Bar */
+        .action-bar {
+            position: absolute;
+            right: 16px;
+            bottom: 100px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 20;
+        }
+        .action-icon {
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(12px);
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            color: white;
+            transition: transform 0.1s ease;
+        }
+        .action-icon:active { transform: scale(0.92); }
+
+        /* Caption Area */
+        .caption-area {
+            position: absolute;
+            bottom: 28px;
+            left: 20px;
+            right: 80px;
+            z-index: 20;
+            color: white;
+        }
+        .username { font-weight: 800; font-size: 14px; display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .caption-text { font-size: 14px; font-weight: 500; margin-top: 4px; line-height: 1.3; }
+        .music-tag { font-size: 11px; opacity: 0.85; margin-top: 6px; display: flex; align-items: center; gap: 6px; }
+        .stats { display: flex; gap: 12px; font-size: 11px; margin-top: 8px; opacity: 0.8; }
+
+        /* Top Navigation */
+        .top-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 14px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 30;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent);
+        }
+        .logo { font-weight: 900; font-style: italic; font-size: 22px; background: linear-gradient(135deg, #f0abfc, #d946ef); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        
+        .search-wrapper {
+            background: rgba(255,255,255,0.12);
+            backdrop-filter: blur(8px);
+            border-radius: 30px;
+            padding: 6px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 220px;
+        }
+        .search-wrapper i { color: rgba(255,255,255,0.6); font-size: 12px; }
+        .search-wrapper input { background: transparent; border: none; outline: none; color: white; font-size: 13px; width: 100%; }
+        .search-wrapper input::placeholder { color: rgba(255,255,255,0.5); font-size: 12px; }
+
+        /* Stories Row */
+        .stories-section {
+            position: fixed;
+            top: 68px;
+            left: 0;
+            right: 0;
+            z-index: 28;
+            padding: 0 16px;
+            overflow-x: auto;
+            white-space: nowrap;
+            scrollbar-width: none;
+            display: flex;
+            gap: 14px;
+        }
+        .stories-section::-webkit-scrollbar { display: none; }
+        .story-item {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+        }
+        .story-item:active { transform: scale(0.95); }
+        .story-ring {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            padding: 2px;
+            background: linear-gradient(135deg, #f97316, #ec4899, #8b5cf6);
+            background-size: 200% 200%;
+            animation: storyPulse 3s ease infinite;
+        }
+        @keyframes storyPulse {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .story-ring img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid #0a0a0f; }
+        .story-name { font-size: 10px; font-weight: 600; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+
+        /* TWIMOJIS - Transparent, compact panel above hold button */
+        .twimojis-container {
+            position: fixed;
+            bottom: 95px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 45;
+            display: flex;
+            gap: 6px;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(10px);
+            padding: 6px 12px;
+            border-radius: 40px;
+            border: 0.5px solid rgba(255,255,255,0.2);
+            pointer-events: auto;
+        }
+        .twimoji {
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.12s ease;
+            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+            opacity: 0.9;
+        }
+        .twimoji:active {
+            transform: scale(1.25);
+            opacity: 1;
+        }
+
+        /* Floating emoji animation */
+        .floating-emoji {
+            position: fixed;
+            font-size: 28px;
+            pointer-events: none;
+            z-index: 999;
+            animation: floatUpFade 1s ease-out forwards;
+            filter: drop-shadow(0 3px 8px rgba(0,0,0,0.3));
+        }
+        @keyframes floatUpFade {
+            0% { opacity: 1; transform: translateY(0) scale(0.7); }
+            50% { transform: translateY(-50px) scale(1.1); }
+            100% { opacity: 0; transform: translateY(-120px) scale(0.5); }
+        }
+
+        /* Chat Button */
+        .chat-button {
+            position: fixed;
+            bottom: 28px;
+            right: 20px;
+            z-index: 45;
+            cursor: pointer;
+            background: linear-gradient(135deg, #d946ef, #a855f7);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 16px rgba(217, 70, 239, 0.4);
+            transition: transform 0.1s ease;
+        }
+        .chat-button:active { transform: scale(0.92); }
+        .chat-button i { font-size: 24px; color: white; }
+
+        /* Chat Panel */
+        .chat-panel {
+            position: fixed;
+            top: 0;
+            right: -350px;
+            width: 100%;
+            max-width: 350px;
+            height: 100vh;
+            background: rgba(15,15,25,0.96);
+            backdrop-filter: blur(20px);
+            z-index: 200;
+            transition: right 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-panel.open { right: 0; }
+        .chat-header { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .chat-header h3 { font-weight: 800; font-size: 16px; background: linear-gradient(135deg, #f0abfc, #d946ef); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .close-chat { background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s; }
+        .close-chat:hover { background: rgba(255,255,255,0.2); }
+        .messages-area { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+        .message { max-width: 85%; padding: 10px 14px; border-radius: 18px; font-size: 12px; line-height: 1.4; }
+        .message.user { background: #d946ef; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .message.other { background: rgba(255,255,255,0.1); color: white; align-self: flex-start; border-bottom-left-radius: 4px; }
+        .chat-input-area { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; gap: 10px; background: rgba(0,0,0,0.3); }
+        .chat-input-area input { flex: 1; background: rgba(255,255,255,0.1); border: none; padding: 10px 14px; border-radius: 28px; color: white; outline: none; font-size: 13px; }
+        .chat-input-area input::placeholder { color: rgba(255,255,255,0.5); }
+        .chat-input-area button { background: linear-gradient(135deg, #d946ef, #a855f7); width: 40px; height: 40px; border-radius: 50%; color: white; cursor: pointer; border: none; transition: transform 0.1s; }
+        .chat-input-area button:active { transform: scale(0.92); }
+        .chat-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 199; display: none; }
+
+        /* Upload FAB */
+        .upload-fab { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); z-index: 40; cursor: pointer; }
+        .upload-menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(12px); z-index: 100; display: none; align-items: center; justify-content: center; }
+        .menu-card { background: rgba(20,20,30,0.95); border-radius: 32px; padding: 24px; max-width: 280px; text-align: center; border: 1px solid rgba(255,255,255,0.15); animation: fadeSlideUp 0.25s ease; }
+        @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .swipe-hint { 
+            position: fixed; 
+            bottom: 100px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            background: rgba(0,0,0,0.5); 
+            backdrop-filter: blur(6px); 
+            padding: 4px 12px; 
+            border-radius: 30px; 
+            font-size: 9px; 
+            color: white; 
+            z-index: 25; 
+            pointer-events: none; 
+            white-space: nowrap;
+            font-weight: 500;
+        }
+
+        .floating-heart { position: absolute; font-size: 1.8rem; pointer-events: none; animation: likeBurst 0.6s forwards; }
+        @keyframes likeBurst { 0% { transform: scale(0.2); opacity: 0; } 40% { transform: scale(1.3); opacity: 1; } 100% { transform: scale(1); opacity: 0; top: -35px; } }
+    </style>
+</head>
+<body>
+
+    <!-- Top Navigation -->
+    <div class="top-nav">
+        <div class="logo">TWEAKS</div>
+        <div class="search-wrapper">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="Search users...">
+        </div>
+        <button id="darkModeToggle" class="text-white text-xs bg-white/15 backdrop-blur px-3 py-1.5 rounded-full transition hover:bg-white/25">
+            <i class="fas fa-moon"></i>
+        </button>
+    </div>
+
+    <!-- Stories Section (24h visible) -->
+    <div class="stories-section">
+        <div class="story-item" data-story="your">
+            <div class="story-ring"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=You&backgroundColor=ffdfbf" alt="your story"></div>
+            <span class="story-name">Your Story</span>
+        </div>
+        <div class="story-item" data-story="leo">
+            <div class="story-ring"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Leo&backgroundColor=b6e3f4" alt="leo"></div>
+            <span class="story-name">leo.exe</span>
+        </div>
+        <div class="story-item" data-story="maya">
+            <div class="story-ring"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Maya&backgroundColor=ffd1dc" alt="maya"></div>
+            <span class="story-name">maya.art</span>
+        </div>
+        <div class="story-item" data-story="kai">
+            <div class="story-ring"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Kai&backgroundColor=c0e0ff" alt="kai"></div>
+            <span class="story-name">kai_world</span>
+        </div>
+        <div class="story-item" data-story="elara">
+            <div class="story-ring"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Elara&backgroundColor=ffe0b5" alt="elara"></div>
+            <span class="story-name">elara</span>
+        </div>
+        <div class="story-item" data-story="nova">
+            <div class="story-ring"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Nova&backgroundColor=ffc8dd" alt="nova"></div>
+            <span class="story-name">nova.space</span>
+        </div>
+    </div>
+
+    <!-- Swipeable Feed Container -->
+    <div class="feed-container" id="feedContainer"></div>
+    <div class="swipe-hint"><i class="fas fa-arrows-alt-v"></i> Swipe for next vibe</div>
+
+    <!-- TWIMOJIS - Transparent, compact, cool emoji panel above hold button -->
+    <div class="twimojis-container" id="twimojisContainer">
+        <div class="twimoji" data-emoji="🔥" title="Fire">🔥</div>
+        <div class="twimoji" data-emoji="✨" title="Sparkle">✨</div>
+        <div class="twimoji" data-emoji="❤️" title="Love">❤️</div>
+        <div class="twimoji" data-emoji="😂" title="Laugh">😂</div>
+        <div class="twimoji" data-emoji="🎉" title="Party">🎉</div>
+        <div class="twimoji" data-emoji="💀" title="Skull">💀</div>
+        <div class="twimoji" data-emoji="👀" title="Eyes">👀</div>
+        <div class="twimoji" data-emoji="😍" title="Heart Eyes">😍</div>
+    </div>
+
+    <!-- Chat Button + Panel -->
+    <div class="chat-button" id="chatButton" title="Open chat">
+        <i class="fas fa-comment-dots"></i>
+    </div>
+    <div class="chat-backdrop" id="chatBackdrop"></div>
+    <div class="chat-panel" id="chatPanel">
+        <div class="chat-header">
+            <h3><i class="fas fa-hashtag"></i> Tweak Lounge</h3>
+            <div class="close-chat" id="closeChatBtn"><i class="fas fa-times"></i></div>
+        </div>
+        <div class="messages-area" id="messagesArea">
+            <div class="message other"><strong>✨ Tweaks Bot</strong><br>Welcome! Tap a Twimoji to react ✨</div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chatInput" placeholder="Type a message...">
+            <button id="sendMsgBtn"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <!-- Hold to Upload FAB -->
+    <div class="upload-fab" id="pressArea">
+        <div class="relative">
+            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-fuchsia-600 to-purple-700 shadow-xl flex items-center justify-center cursor-pointer active:scale-95 transition">
+                <div class="w-9 h-9 rounded-full bg-white/20 backdrop-blur flex flex-col items-center justify-center">
+                    <i class="fas fa-plus-circle text-white text-lg"></i>
+                    <span class="text-[5px] font-black uppercase">Hold</span>
+                </div>
+            </div>
+            <svg class="absolute top-0 left-0 w-full h-full -rotate-90 pointer-events-none">
+                <circle id="progressCircle" cx="24" cy="24" r="20" fill="none" stroke="url(#gradCircle)" stroke-width="2.5" stroke-dasharray="125.6" stroke-dashoffset="125.6" stroke-linecap="round"/>
+                <defs><linearGradient id="gradCircle"><stop offset="0%" stop-color="#f0abfc"/><stop offset="100%" stop-color="#d946ef"/></linearGradient></defs>
+            </svg>
+        </div>
+    </div>
+
+    <!-- Upload Menu Modal -->
+    <div id="uploadMenu" class="upload-menu-overlay">
+        <div class="menu-card">
+            <div class="flex justify-end">
+                <button id="closeMenuBtn" class="text-white/60 text-xl hover:text-white transition">&times;</button>
+            </div>
+            <h2 class="text-xl font-black italic mb-4 bg-gradient-to-r from-fuchsia-300 to-purple-300 bg-clip-text text-transparent">✨ create tweak</h2>
+            <div class="grid grid-cols-2 gap-2">
+                <div class="bg-white/10 p-3 rounded-xl flex flex-col items-center gap-1 cursor-pointer hover:bg-white/20 transition active:scale-95" data-option="video">
+                    <i class="fas fa-video text-fuchsia-300 text-lg"></i>
+                    <span class="text-xs font-bold">Video</span>
+                </div>
+                <div class="bg-white/10 p-3 rounded-xl flex flex-col items-center gap-1 cursor-pointer hover:bg-white/20 transition active:scale-95" data-option="photo">
+                    <i class="fas fa-camera text-purple-300 text-lg"></i>
+                    <span class="text-xs font-bold">Photo</span>
+                </div>
+                <div class="bg-white/10 p-3 rounded-xl flex flex-col items-center gap-1 cursor-pointer hover:bg-white/20 transition active:scale-95" data-option="story">
+                    <i class="fas fa-star text-pink-300 text-lg"></i>
+                    <span class="text-xs font-bold">Story</span>
+                </div>
+                <div class="bg-white/10 p-3 rounded-xl flex flex-col items-center gap-1 cursor-pointer hover:bg-white/20 transition active:scale-95" data-option="twimoji">
+                    <i class="fas fa-smile-wink text-indigo-300 text-lg"></i>
+                    <span class="text-xs font-bold">Twimoji</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== FEED DATA ====================
+        const feedData = [
+            { id: 1, type: "image", url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1000&q=80", username: "@midnight_visions", caption: "Neon reverie, city lights dance 🌃", music: "Midnight Drive - Lofi", likes: 12400, comments: 342 },
+            { id: 2, type: "video", url: "https://assets.mixkit.co/videos/preview/mixkit-forest-stream-in-sunlight-529-large.mp4", username: "@kai_world", caption: "Find peace in nature 🌿", music: "Ambient Waves", likes: 8700, comments: 215 },
+            { id: 3, type: "image", url: "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?auto=format&fit=crop&w=1000&q=80", username: "@maya.art", caption: "Abstract soul, digital dreams 🎨", music: "Neural Paint", likes: 15300, comments: 589 },
+            { id: 4, type: "video", url: "https://assets.mixkit.co/videos/preview/mixkit-waves-in-the-water-1164-large.mp4", username: "@leo.exe", caption: "Ocean therapy 🌊 infinity", music: "Coastal Breeze", likes: 9600, comments: 302 }
+        ];
+
+        let currentLikeStates = {}, likesCount = {};
+        feedData.forEach((item, idx) => { currentLikeStates[idx] = false; likesCount[idx] = item.likes; });
+        const feedContainer = document.getElementById('feedContainer');
+        function formatNumber(n) { return n >= 1000 ? (n/1000).toFixed(1)+'k' : n; }
+        
+        function renderFeed() {
+            feedContainer.innerHTML = '';
+            feedData.forEach((item, index) => {
+                const div = document.createElement('div'); div.className = 'feed-item';
+                const media = item.type === 'video' ? document.createElement('video') : document.createElement('img');
+                if (item.type === 'video') { media.src = item.url; media.loop = true; media.muted = true; media.playsInline = true; } else media.src = item.url;
+                media.className = 'media-element';
+                const gradient = document.createElement('div'); gradient.className = 'gradient-overlay';
+                const actionBar = document.createElement('div'); actionBar.className = 'action-bar';
+                actionBar.innerHTML = `<div class="action-icon like-icon" data-idx="${index}"><i class="far fa-heart"></i></div><div class="action-icon"><i class="far fa-comment"></i></div><div class="action-icon"><i class="far fa-bookmark"></i></div><div class="action-icon"><i class="fas fa-share-alt"></i></div>`;
+                const captionDiv = document.createElement('div'); captionDiv.className = 'caption-area';
+                captionDiv.innerHTML = `<div class="username"><span>${item.username}</span><i class="fas fa-check-circle text-blue-400 text-xs"></i></div><div class="caption-text">${item.caption}</div><div class="music-tag"><i class="fas fa-music"></i><span>${item.music}</span></div><div class="stats"><span><i class="far fa-heart"></i> <span class="like-counter-${index}">${formatNumber(likesCount[index])}</span></span><span><i class="far fa-comment"></i> ${item.comments}</span></div>`;
+                div.append(media, gradient, actionBar, captionDiv); feedContainer.appendChild(div);
+            });
+            document.querySelectorAll('.like-icon').forEach(btn => btn.addEventListener('click', (e) => { const idx = parseInt(btn.dataset.idx); handleLike(idx, btn); }));
+            setupVideoAutoplay();
+        }
+        
+        function handleLike(idx, btn) {
+            const icon = btn.querySelector('i');
+            if (!currentLikeStates[idx]) { 
+                currentLikeStates[idx] = true; likesCount[idx]++; icon.classList.replace('far','fas'); icon.classList.add('text-fuchsia-500');
+                const heart = document.createElement('div'); heart.innerHTML='❤️'; heart.className='floating-heart'; btn.style.position='relative'; btn.appendChild(heart); setTimeout(()=>heart.remove(),600);
+                if(navigator.vibrate) navigator.vibrate(30); document.querySelector(`.like-counter-${idx}`).innerText = formatNumber(likesCount[idx]);
+            } else { 
+                currentLikeStates[idx] = false; likesCount[idx]--; icon.classList.replace('fas','far'); icon.classList.remove('text-fuchsia-500'); 
+                if(navigator.vibrate) navigator.vibrate(15); document.querySelector(`.like-counter-${idx}`).innerText = formatNumber(likesCount[idx]);
+            }
+        }
+        
+        function setupVideoAutoplay() { 
+            const observer = new IntersectionObserver(entries => entries.forEach(e => { if(e.isIntersecting) e.target.play?.(); else e.target.pause?.(); }), {threshold:0.5});
+            document.querySelectorAll('.feed-item video').forEach(v=>observer.observe(v)); 
+        }
+        renderFeed();
+
+        // ==================== TWIMOJIS - Floating Emoji Effect ====================
+        function createFloatingEmoji(emoji, x, y) {
+            const floating = document.createElement('div');
+            floating.className = 'floating-emoji';
+            floating.textContent = emoji;
+            floating.style.left = x + 'px';
+            floating.style.top = y + 'px';
+            document.body.appendChild(floating);
+            setTimeout(() => floating.remove(), 1000);
+        }
+
+        const twimojis = document.querySelectorAll('.twimoji');
+        twimojis.forEach(twimoji => {
+            twimoji.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const emoji = twimoji.getAttribute('data-emoji');
+                const rect = twimoji.getBoundingClientRect();
+                const x = rect.left + rect.width/2 - 15;
+                const y = rect.top - 8;
+                createFloatingEmoji(emoji, x, y);
+                for (let i = 0; i < 2; i++) {
+                    setTimeout(() => {
+                        const randomX = rect.left + (Math.random() * rect.width) - 10;
+                        const randomY = rect.top - (Math.random() * 20) - 5;
+                        createFloatingEmoji(emoji, randomX, randomY);
+                    }, i * 60);
+                }
+                if (navigator.vibrate) navigator.vibrate(12);
+                
+                // Add to chat
+                const msgArea = document.getElementById('messagesArea');
+                const reactionMsg = document.createElement('div');
+                reactionMsg.className = 'message user';
+                reactionMsg.innerHTML = `sent ${emoji}`;
+                msgArea.appendChild(reactionMsg);
+                msgArea.scrollTop = msgArea.scrollHeight;
+                setTimeout(() => {
+                    const reply = document.createElement('div');
+                    reply.className = 'message other';
+                    reply.innerHTML = `<strong>Bot</strong><br>Nice ${emoji}! ✨`;
+                    msgArea.appendChild(reply);
+                    msgArea.scrollTop = msgArea.scrollHeight;
+                }, 400);
+            });
+        });
+
+        // Tap anywhere on feed adds random emoji
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.feed-item') && !e.target.closest('.action-icon') && !e.target.closest('.twimoji') && !e.target.closest('.chat-button') && !e.target.closest('.upload-fab')) {
+                const emojis = ['🔥', '✨', '❤️', '😂', '🎉', '💀', '👀', '😍', '🤯', '💯'];
+                const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+                createFloatingEmoji(randomEmoji, e.clientX - 15, e.clientY - 20);
+                if (navigator.vibrate) navigator.vibrate(8);
+            }
+        });
+
+        // ==================== STORIES ====================
+        document.querySelectorAll('.story-item').forEach(s => s.addEventListener('click', () => {
+            if(navigator.vibrate) navigator.vibrate(15);
+            const toast = document.createElement('div'); toast.className='fixed top-28 left-1/2 transform -translate-x-1/2 bg-black/70 text-white text-[10px] px-3 py-1.5 rounded-full z-[200] backdrop-blur-sm'; 
+            toast.innerText = '📖 Story: visible to friends for 24 hours!'; document.body.appendChild(toast); setTimeout(()=>toast.remove(),1800);
+        }));
+        
+        // ==================== SEARCH ====================
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', (e) => {
+            if(navigator.vibrate) navigator.vibrate(8);
+            const toast = document.createElement('div'); toast.className='fixed top-16 left-1/2 transform -translate-x-1/2 bg-black/60 text-white text-[9px] px-3 py-1 rounded-full z-[200] backdrop-blur-sm'; 
+            toast.innerText = `🔍 ${e.target.value || 'explore'}`; document.body.appendChild(toast); setTimeout(()=>toast.remove(),600);
+        });
+
+        // ==================== CHAT SYSTEM ====================
+        const chatBtn = document.getElementById('chatButton'), chatPanel = document.getElementById('chatPanel'), chatBackdrop = document.getElementById('chatBackdrop'), closeChat = document.getElementById('closeChatBtn'), msgArea = document.getElementById('messagesArea'), chatInput = document.getElementById('chatInput'), sendBtn = document.getElementById('sendMsgBtn');
+        function openChat() { chatPanel.classList.add('open'); chatBackdrop.style.display = 'block'; }
+        function closeChatFunc() { chatPanel.classList.remove('open'); chatBackdrop.style.display = 'none'; }
+        chatBtn.onclick = openChat; closeChat.onclick = closeChatFunc; chatBackdrop.onclick = closeChatFunc;
+        function sendMessage() { const text = chatInput.value.trim(); if(!text) return;
+            const msg = document.createElement('div'); msg.className='message user'; msg.innerText = text; msgArea.appendChild(msg); chatInput.value = ''; msgArea.scrollTop = msgArea.scrollHeight;
+            setTimeout(() => { const reply = document.createElement('div'); reply.className='message other'; reply.innerHTML = '<strong>Bot</strong><br>Love that vibe! 🔥'; msgArea.appendChild(reply); msgArea.scrollTop = msgArea.scrollHeight; }, 500);
+            if(navigator.vibrate) navigator.vibrate(20); }
+        sendBtn.onclick = sendMessage; chatInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') sendMessage(); });
+
+        // ==================== HOLD TO UPLOAD ====================
+        const menu = document.getElementById('uploadMenu'), progressCircle = document.getElementById('progressCircle'); let pressTimer=null, animFrame=null, pressStart=0;
+        function triggerHaptic(i=25){ if(navigator.vibrate) navigator.vibrate(i); }
+        function longPress(){ if(menu.style.display !== 'flex'){ triggerHaptic(60); menu.style.display='flex'; } resetVisuals(); }
+        function resetVisuals(){ if(animFrame) cancelAnimationFrame(animFrame); if(progressCircle){ progressCircle.style.transition='stroke-dashoffset 0.15s ease'; progressCircle.style.strokeDashoffset='125.6'; } pressStart=0; }
+        function updateProgress(){ if(!pressStart) return; const pct = Math.min(1, (Date.now()-pressStart)/700); const off = 125.6*(1-pct); if(progressCircle) progressCircle.style.strokeDashoffset = off; if(pct>=1){ clearTimeout(pressTimer); longPress(); if(animFrame) cancelAnimationFrame(animFrame); animFrame=null; } else animFrame = requestAnimationFrame(updateProgress); }
+        function startP(e){ e.preventDefault(); if(pressTimer) clearTimeout(pressTimer); pressStart=Date.now(); if(progressCircle){ progressCircle.style.transition='none'; progressCircle.style.strokeDashoffset='125.6'; progressCircle.style.transition='stroke-dashoffset 0.02s linear'; } pressTimer=setTimeout(()=>{ longPress(); resetVisuals(); if(animFrame) cancelAnimationFrame(animFrame); },700); animFrame=requestAnimationFrame(updateProgress); triggerHaptic(10); }
+        function endP(){ if(pressTimer) clearTimeout(pressTimer); if(animFrame) cancelAnimationFrame(animFrame); if(menu.style.display !== 'flex' && progressCircle){ progressCircle.style.transition='stroke-dashoffset 0.2s ease'; progressCircle.style.strokeDashoffset='125.6'; } pressStart=0; }
+        const pressDiv = document.getElementById('pressArea'); pressDiv.addEventListener('touchstart', startP, {passive:false}); pressDiv.addEventListener('touchend', endP); pressDiv.addEventListener('mousedown', startP); window.addEventListener('mouseup', endP);
+        document.getElementById('closeMenuBtn')?.addEventListener('click', ()=>{ menu.style.display='none'; resetVisuals(); });
+        menu.addEventListener('click', (e)=>{ if(e.target===menu) menu.style.display='none'; });
+        document.querySelectorAll('[data-option]').forEach(opt => opt.addEventListener('click', (e)=>{ e.stopPropagation(); const type = opt.dataset.option; triggerHaptic(35);
+            const toast = document.createElement('div'); toast.className='fixed bottom-28 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-[10px] px-3 py-1.5 rounded-full z-[200] backdrop-blur-sm'; 
+            toast.innerHTML = `✨ ${type} posted!`; document.body.appendChild(toast); setTimeout(()=>toast.remove(),1200); menu.style.display='none'; resetVisuals(); }));
+        
+        // ==================== DARK MODE ====================
+        const darkToggle = document.getElementById('darkModeToggle'); let light=false;
+        darkToggle.addEventListener('click',()=>{ document.body.classList.toggle('light-mode'); light=document.body.classList.contains('light-mode'); darkToggle.innerHTML=light?'<i class="fas fa-moon"></i>':'<i class="fas fa-sun"></i>'; triggerHaptic(15); });
+        
+        // ==================== INITIALIZATION ====================
+        window.addEventListener('contextmenu', e => { if(e.target.closest('.feed-container')) e.preventDefault(); });
+        document.body.addEventListener('touchstart', ()=>{ document.querySelectorAll('.feed-item video').forEach(v=>{ if(v.getBoundingClientRect().top<window.innerHeight && v.getBoundingClientRect().bottom>0) v.play().catch(()=>{}); }); }, {once:true});
+        if(progressCircle) progressCircle.style.strokeDashoffset='125.6';
+        
+        console.log('✨ Tweaks loaded — Twimojis ready! Click any emoji above the hold button!');
+    </script>
+</body>
+</html>
