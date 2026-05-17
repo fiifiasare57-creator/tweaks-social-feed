@@ -4,40 +4,65 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Tweaks | Profile</title>
-    <link rel="manifest" href="/manifest.json">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; font-family: 'Inter', sans-serif; color: white; }
         
-        .profile-header { background: linear-gradient(135deg, #1a1a2e, #0a0a0f); padding: 60px 20px 30px; }
+        .profile-header { background: linear-gradient(135deg, #1a1a2e, #0a0a0f); padding: 60px 20px 30px; text-align: center; }
         .profile-avatar { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #d946ef; object-fit: cover; margin-bottom: 16px; }
+        
         .stats-grid { display: flex; justify-content: space-around; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 24px; margin: 20px; }
         .stat-item { text-align: center; }
         .stat-number { font-size: 22px; font-weight: 800; }
         .stat-label { font-size: 11px; opacity: 0.6; margin-top: 4px; }
         
-        .tabs { display: flex; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 0 20px; }
-        .tab { flex: 1; text-align: center; padding: 12px; font-size: 14px; font-weight: 600; cursor: pointer; color: rgba(255,255,255,0.5); position: relative; }
-        .tab.active { color: #d946ef; }
-        .tab.active::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: #d946ef; }
+        .follow-btn { background: linear-gradient(135deg, #d946ef, #a855f7); border: none; padding: 8px 24px; border-radius: 30px; color: white; font-weight: 600; cursor: pointer; }
+        .edit-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 8px 24px; border-radius: 30px; color: white; font-weight: 600; cursor: pointer; }
         
-        .video-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 2px; }
-        .video-thumb { aspect-ratio: 9/16; background: #1a1a2e; object-fit: cover; width: 100%; cursor: pointer; }
-        
-        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(10,10,15,0.95); backdrop-filter: blur(20px); display: flex; justify-content: space-around; padding: 8px 20px 18px; border-top: 1px solid rgba(255,255,255,0.1); z-index: 50; }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: rgba(10,10,15,0.95);
+            backdrop-filter: blur(20px);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 20px 18px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            z-index: 50;
+        }
         .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: rgba(255,255,255,0.5); cursor: pointer; }
         .nav-item.active { color: #d946ef; }
         .nav-item i { font-size: 24px; }
         .nav-item span { font-size: 10px; font-weight: 500; }
         
-        .follow-btn { background: linear-gradient(135deg, #d946ef, #a855f7); border: none; padding: 8px 24px; border-radius: 30px; color: white; font-weight: 600; cursor: pointer; }
-        .edit-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 8px 24px; border-radius: 30px; color: white; font-weight: 600; cursor: pointer; }
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(8px);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 40;
+            color: white;
+            font-size: 20px;
+        }
     </style>
 </head>
 <body>
+    <div class="back-btn" onclick="window.location.href='/index.html'">
+        <i class="fas fa-arrow-left"></i>
+    </div>
+    
     <div id="profileContainer"></div>
+    
     <div class="bottom-nav">
         <div class="nav-item" data-page="feed"><i class="fas fa-home"></i><span>Home</span></div>
         <div class="nav-item" data-page="discover"><i class="fas fa-compass"></i><span>Discover</span></div>
@@ -45,9 +70,11 @@
     </div>
 
     <script type="module">
-        import { auth, db, doc, getDoc, updateDoc, collection, query, where, getDocs, arrayUnion, arrayRemove, onAuthStateChanged, signOut } from './js/firebase-config.js';
+        import { auth, db, doc, getDoc, updateDoc, onAuthStateChanged, signOut } from './js/firebase-config.js';
         
-        let currentUser = null, profileUserId = null, userData = null, isFollowing = false;
+        let currentUser = null;
+        let profileUserId = null;
+        let isFollowing = false;
         
         async function loadProfile(userId) {
             const userDoc = await getDoc(doc(db, 'users', userId));
@@ -57,21 +84,30 @@
         async function renderProfile() {
             const container = document.getElementById('profileContainer');
             const profileData = await loadProfile(profileUserId);
-            if (!profileData) { container.innerHTML = '<div class="text-center p-8">User not found</div>'; return; }
+            if (!profileData) { 
+                container.innerHTML = '<div class="text-center p-8">User not found</div>'; 
+                return; 
+            }
             
             const isOwnProfile = currentUser && currentUser.uid === profileUserId;
             const followerCount = profileData.followers?.length || 0;
             const followingCount = profileData.following?.length || 0;
             
-            if (currentUser && !isOwnProfile) isFollowing = profileData.followers?.includes(currentUser.uid) || false;
+            if (currentUser && !isOwnProfile) {
+                isFollowing = profileData.followers?.includes(currentUser.uid) || false;
+            }
             
             container.innerHTML = `
-                <div class="profile-header text-center">
-                    <img src="${profileData.avatar}" class="profile-avatar mx-auto">
+                <div class="profile-header">
+                    <img src="${profileData.avatar}" class="profile-avatar">
                     <h2 class="text-2xl font-bold">${profileData.username}</h2>
                     <p class="text-sm opacity-70 mt-1">${profileData.bio || 'No bio yet'}</p>
                     <div class="flex gap-3 justify-center mt-4">
-                        ${isOwnProfile ? `<button class="edit-btn" id="editProfileBtn"><i class="fas fa-pen"></i> Edit Profile</button><button class="edit-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>` : `<button class="follow-btn" id="followBtn">${isFollowing ? 'Following ✓' : 'Follow +'}</button>`}
+                        ${isOwnProfile ? 
+                            `<button class="edit-btn" id="editProfileBtn"><i class="fas fa-pen"></i> Edit Profile</button>
+                             <button class="edit-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>` : 
+                            `<button class="follow-btn" id="followBtn">${isFollowing ? 'Following ✓' : 'Follow +'}</button>`
+                        }
                     </div>
                 </div>
                 <div class="stats-grid">
@@ -80,30 +116,42 @@
                     <div class="stat-item"><div class="stat-number">${followingCount}</div><div class="stat-label">Following</div></div>
                     <div class="stat-item"><div class="stat-number">${profileData.likes || 0}</div><div class="stat-label">Likes</div></div>
                 </div>
-                <div class="tabs"><div class="tab active">Videos</div><div class="tab">Liked</div></div>
-                <div class="video-grid" id="videoGrid"><div class="col-span-3 text-center py-20 opacity-50">No videos yet</div></div>
+                <div class="text-center py-10 opacity-50">
+                    <i class="fas fa-video text-4xl mb-2"></i>
+                    <p>No videos yet</p>
+                    <p class="text-xs mt-1">Check back later!</p>
+                </div>
             `;
             
             if (!isOwnProfile && document.getElementById('followBtn')) {
                 document.getElementById('followBtn').addEventListener('click', async () => {
+                    const userRef = doc(db, 'users', currentUser.uid);
+                    const targetRef = doc(db, 'users', profileUserId);
+                    
                     if (isFollowing) {
-                        await updateDoc(doc(db, 'users', currentUser.uid), { following: arrayRemove(profileUserId) });
-                        await updateDoc(doc(db, 'users', profileUserId), { followers: arrayRemove(currentUser.uid) });
+                        await updateDoc(userRef, { following: profileData.following?.filter(id => id !== profileUserId) || [] });
+                        await updateDoc(targetRef, { followers: profileData.followers?.filter(id => id !== currentUser.uid) || [] });
                     } else {
-                        await updateDoc(doc(db, 'users', currentUser.uid), { following: arrayUnion(profileUserId) });
-                        await updateDoc(doc(db, 'users', profileUserId), { followers: arrayUnion(currentUser.uid) });
+                        await updateDoc(userRef, { following: [...(profileData.following || []), profileUserId] });
+                        await updateDoc(targetRef, { followers: [...(profileData.followers || []), currentUser.uid] });
                     }
                     renderProfile();
                 });
             }
             
             if (document.getElementById('logoutBtn')) {
-                document.getElementById('logoutBtn').addEventListener('click', async () => { await signOut(auth); window.location.href = '/login.html'; });
+                document.getElementById('logoutBtn').addEventListener('click', async () => { 
+                    await signOut(auth); 
+                    window.location.href = '/login.html'; 
+                });
             }
+            
             if (document.getElementById('editProfileBtn')) {
                 document.getElementById('editProfileBtn').addEventListener('click', () => {
                     const newBio = prompt('Edit your bio:', profileData.bio);
-                    if (newBio !== null && currentUser) updateDoc(doc(db, 'users', currentUser.uid), { bio: newBio }).then(() => renderProfile());
+                    if (newBio !== null && currentUser) {
+                        updateDoc(doc(db, 'users', currentUser.uid), { bio: newBio }).then(() => renderProfile());
+                    }
                 });
             }
         }
