@@ -319,4 +319,44 @@
             
             if (document.getElementById('editProfileBtn')) {
                 document.getElementById('editProfileBtn').addEventListener('click', () => {
-                    const newBio = prompt('Edit your
+                    const newBio = prompt('Edit your bio:', profileData.bio);
+                    if (newBio !== null && currentUser) {
+                        updateDoc(doc(db, 'users', currentUser.uid), { bio: newBio });
+                        renderProfile();
+                    }
+                });
+            }
+            
+            // Video hover preview
+            document.querySelectorAll('.video-thumb').forEach(video => {
+                video.addEventListener('mouseenter', () => video.play());
+                video.addEventListener('mouseleave', () => { video.pause(); video.currentTime = 0; });
+                video.addEventListener('click', () => {
+                    window.location.href = `/index.html?video=${video.src}`;
+                });
+            });
+        }
+        
+        // Navigation
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const page = item.getAttribute('data-page');
+                if (page === 'feed') window.location.href = '/index.html';
+                else if (page === 'profile') renderProfile();
+            });
+        });
+        
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            currentUser = user;
+            const urlParams = new URLSearchParams(window.location.search);
+            profileUserId = urlParams.get('userId') || user.uid;
+            renderProfile();
+        });
+    </script>
+</body>
+</html>
